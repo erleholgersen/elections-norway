@@ -1,9 +1,8 @@
 <html>
 <head>
+<meta charset="UTF-8">
 
 <title>Norske valg</title>
-
-
 <script src="http://d3js.org/d3.v3.min.js"></script>
 
 </head>
@@ -14,40 +13,126 @@
 
 
 
-<script>
+<script charset="UTF-8">
 
-function distriktsmandat(n, votes, firstDivisor) {
-  if(typeof(firstDivisor) === 'undefined') firstDivisor = 1.4;
+var sperregrense = 4.0;
 
-  var mandater = Array.apply(null, Array(votes.length)).map(Number.prototype.valueOf, 0);
+// 2013 fordeling
+var mandaterPerFylke = {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
+"Nord-Trøndelag": 5, "Oslo": 19, "Sogn og Fjordane": 4, "Telemark": 6, "Vest-Agder": 6,
+"Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 16, "Nordland": 9, "Oppland": 7,
+"Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7};
 
-  var divVotes = votes.map(function(x) {
-    return x/firstDivisor;
+d3.csv("2013.csv", function(data) {
+
+  data.forEach(function(d) {
+    d.Stemmer = +d.Stemmer;
   });
 
+  var fylkeData  = d3.nest()
+  .key(function(d) { return d.Fylke; })
+  .entries(data);
 
-  var maxValue;
-  var maxIndex;
-  var s; // number of mandater already awarded to party
 
-  // assign mandater
-  for( i = 0; i < n; i++ ) {
-    maxValue = Math.max.apply(Math, divVotes);
-    maxIndex = divVotes.indexOf(maxValue);
+  var mandater = [];
 
-    // increase mandat count
-    mandater[maxIndex] += 1;
-
-    s = mandater[maxIndex];
-    divVotes[maxIndex] = votes[maxIndex]/(2*s - 1);
+  for(var key in mandaterPerFylke) {
+    var stemmer = fylkeData.filter(function(d) { return d.key == key; });
+    var temp = distriktsmandat(mandaterPerFylke[key] - 1, stemmer[0].values);
+    mandater = mandater.concat(temp);
+    //mandater[key] = distriktsmandat2(mandaterPerFylke[key], stemmer[0].values);
   }
 
-  return(mandater);
-}
 
-var a = [1000, 500, 100];
+  var landsData = d3.nest()
+  .key(function(d) { return d.Parti; })
+  .rollup(function(leaves) { return { 
+    "Stemmer": d3.sum(leaves, function(d) { return d.Stemmer; }), 
+    "Mandater": d3.sum(leaves, function(d) { return d.Mandater; }) }  })
+  .entries(mandater);
 
-console.log(distriktsmandat(19, a));
+  console.log(landsData);
+
+  var landsStemmer = d3.nest()
+  .key(function(d) { return d.Parti; })
+  .rollup(function(leaves) { return { 
+    "Stemmer": d3.sum(leaves, function(d) { return d.Stemmer; }) }} )
+  .entries(mandater);
+
+
+
+  var stemmeSum = d3.sum(landsStemmer, function(d) { return d.values.Stemmer; });
+
+  for(i = 0; i < landsStemmer.length; i++) {
+    key = landsStemmer[i].key;
+    landsStemmer[i].values.Parti = key;
+
+    landsStemmer[i].values.Prosent = landsStemmer[i].values.Stemmer*100/stemmeSum;
+
+    if(landsStemmer[i].values.Prosent < sperregrense) {
+      landsStemmer[i].values.Stemmer = 0;
+    }
+
+  }
+
+  var landsStemmer = landsStemmer.map(function(d) { return d.values; });
+   
+  console.log(landsData);
+  console.log(landsStemmer);
+
+  var M = 169;
+
+  for(i = M; i > 0; i--) {
+    var landsMandater = distriktsmandat(i, landsStemmer);
+
+    //console.log(landsMandater);
+    for(j = 0; j < landsMandater.length; j++) {
+      var parti = landsMandater[j].Parti;
+      var distriktsmandater = landsData.filter(function(d) { return d.key == parti; });
+      distriktsmandater = distriktsmandater[0].values.Mandater;
+      landsMandater[j].Mandater = Math.max(distriktsmandater, landsStemmer[j].Mandater);
+    }
+
+    var mandatSum = d3.sum(landsMandater, function(d) { return d.Mandater; });
+
+    //console.log(mandatSum);
+
+    if(mandatSum == M) {
+      break;
+    }
+
+  }
+
+
+  console.log(landsMandater);
+
+});
+
+function distriktsmandat(n, votes, firstDivisor) {
+  // votes object array with keys Stemmer, Parti
+
+  if(typeof(firstDivisor) === 'undefined') firstDivisor = 1.4;
+
+  for(i = 0; i < votes.length; i++ ) {
+    votes[i].Mandater = 0;
+    votes[i].tempVotes = votes[i].Stemmer/firstDivisor;
+  }
+
+  for( i = 0; i < n; i++ ) {
+    // sort descending order
+    votes = votes.sort(function(a, b) { 
+      return d3.descending(a.tempVotes, b.tempVotes); });
+
+    votes[0].Mandater += 1;
+    votes[0].tempVotes = votes[0].Stemmer/(2*votes[0].Mandater + 1);
+  }
+
+  votes = votes.sort(function(a, b) { return d3.descending(a.Mandater, b.Mandater); });
+
+  return(votes);
+
+ }
+
 
 </script>
 </body>

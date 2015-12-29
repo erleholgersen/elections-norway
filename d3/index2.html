@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta charset="UTF-8">
+
+<title>Norske valg</title>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+</head>
+<body>
+
+<script charset="UTF-8">
+var mandaterPerFylke = {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
+"Nord-Trøndelag": 5, "Oslo": 19, "Sogn og Fjordane": 4, "Telemark": 6, "Vest-Agder": 6,
+"Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 16, "Nordland": 9, "Oppland": 7,
+"Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7};
+
+
+d3.csv("2013.csv", function(data) {
+  console.log("DATA:");   
+  console.log(data);
+
+data.forEach(function(d) {
+    d.Stemmer = +d.Stemmer;
+  });
+
+  var fylkeData  = d3.nest()
+  .key(function(d) { return d.Fylke; })
+  .entries(data);
+
+  console.log(fylkeData);
+
+  for(var key in mandaterPerFylke) {
+    console.log(key);
+    var stemmer = fylkeData.filter(function(d) { return d.key == key; });
+    var y = stemmer[0].values;
+    console.log(y);
+    var x = distriktsmandat2(mandaterPerFylke[key] - 1, y);
+   // console.log(x);
+    //mandater = mandater.concat(x);
+    //mandater[key] = distriktsmandat2(mandaterPerFylke[key], stemmer[0].values);
+  }
+
+
+
+});
+
+
+function distriktsmandat2(n, votes, firstDivisor) {
+  // votes object array with keys Stemmer, Parti
+
+  if(typeof(firstDivisor) === 'undefined') firstDivisor = 1.4;
+
+  console.log(votes);
+
+  for(i = 0; i < votes.length; i++) {
+  	votes[i].Mandater = 0;
+  	votes[i].tempVotes = votes[i].Stemmer/firstDivisor;
+  }
+
+  console.log(votes);
+
+  for( i = 0; i < 1; i++ ) {
+    // sort descending order
+    votes = votes.sort(function(a, b) { 
+      return d3.descending(a.tempVotes, b.tempVotes); });
+
+    console.log(votes[0]);
+
+    votes[0].Mandater += 1;
+    votes[0].tempVotes = votes[0].Stemmer/(2*votes[0].Mandater + 1);
+
+    
+    console.log(votes);
+  }
+
+
+
+  return(0);
+
+ }
+</script>
+</body>
+</html>

@@ -43,7 +43,6 @@ mandater_per_fylke = list(
 )
 
 stemmedata = aggregate(Stemmer.totalt ~ Parti + Fylkenavn, data, FUN = sum)
-stemmedata = subset(stemmedata)
 
 fylker = unique(stemmedata$Fylkenavn)
 partier = unique(stemmedata$Parti)
