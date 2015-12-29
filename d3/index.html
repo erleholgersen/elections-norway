@@ -3,19 +3,73 @@
 <meta charset="UTF-8">
 
 <title>Norske valg</title>
-<script src="http://d3js.org/d3.v3.min.js"></script>
 
+<link rel="stylesheet" type="text/css" href="style.css" />
+
+
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<script src="//code.jquery.com/jquery-1.10.2.js"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
 </head>
 <body>
 
+<div id="sidebar">
+<p>
+<div id="sperregrense-tekst">Sperregrense: 4.0%</div>
+<div id="sperregrense"></div>
+</p>
 
+<p>
+<div id="delingskoeffisient-tekst">Første delingskoeffisient: 1.4</div>
+<div id="delingskoeffisient"></div>
+</p>
 
+</div>
 
+<div id="graphic">
+<svg width="500" height="300">
+</svg>
+
+</div>
 
 
 <script charset="UTF-8">
 
-var sperregrense = 4.0;
+
+// initialize sliders
+
+  $(function() {
+    $( "#sperregrense" ).slider({
+      min: 0,
+      max: 10,
+      step: 0.1,
+      value: 4.0,
+      slide: function(event, ui) {
+        $("#sperregrense-tekst").html("Sperregrense: " + ui.value + "%");
+      },
+      change: function() {
+        updateGraph();
+      }
+    });
+  });
+
+    $(function() {
+    $( "#delingskoeffisient" ).slider({
+      min: 1,
+      max: 2,
+      step: 0.05,
+      value: 1.4,
+      slide: function(event, ui) {
+        $("#delingskoeffisient-tekst").html("Første delingskoeffisient: "+ ui.value );
+      },
+      change: function() {
+        updateGraph();
+      }
+    });
+  });
+
+var firstDivisor = 1.4;
 
 // 2013 fordeling
 var mandaterPerFylke = {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
@@ -23,26 +77,175 @@ var mandaterPerFylke = {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og R
 "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 16, "Nordland": 9, "Oppland": 7,
 "Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7};
 
-d3.csv("2013.csv", function(data) {
+var colours = {
+  "A": "#DF1A22",
+  "H": "#145194",
+  "FRP": "#053C70",
+  "SV": "#E42235",
+  "MDG": "#6A9325",
+  "KRF": "#FECD0F",
+  "V": "#61B564",
+  "SP": "#088643",
+  "KRISTNE": "#F6F5D5",
+  "RØDT": "#E31C23",
+  "PP": "#0D59AC",
+  "PIR": "#262626"
+}
 
+var M = 169;
+
+width = 500;
+height = 300;
+
+n_width = 20;
+n_height = Math.ceil(M/n_width);
+
+var square_width = 20;
+var square_height = 25;
+
+var x = d3.scale.linear()
+  .domain([0, n_width])
+  .range([0, width]);
+
+var y = d3.scale.linear()
+  .domain([0, n_height])
+  .range([0, height]);
+
+makeGraph();
+
+
+function makeGraph() {
+
+  var sperregrense = 4.0;
+
+  d3.csv("2013.csv", function(data) {
   data.forEach(function(d) {
     d.Stemmer = +d.Stemmer;
   });
 
-  var fylkeData  = d3.nest()
+
+  var seats = runElection(data, sperregrense, firstDivisor);
+
+  // make SVG
+
+  var svg = d3.select("svg");
+
+  var squares = svg.selectAll("rect")
+  .data(seats)
+  .enter()
+  .append("rect")
+  .attr("width", square_width)
+  .attr("height", square_height)
+  .attr("x", function(d, i) {
+    return x(Math.floor(i/n_height));
+  })
+  .attr("y", function(d, i) {
+    return y(i % n_height);
+  })
+  .attr("fill", function(d) {
+    if(d.Parti in colours) {
+      return colours[d.Parti];
+    } else {
+      return "black";
+    }
+  })
+  .on("click", function(d) {
+    console.log(d.Parti);
+  });
+
+});
+
+}
+
+function updateGraph() {
+  sperregrense = $("#sperregrense").slider("value");
+  firstDivisor = $("#delingskoeffisient").slider("value");
+
+
+  d3.csv("2013.csv", function(data) {
+    data.forEach(function(d) {
+      d.Stemmer = +d.Stemmer;
+    });
+
+  var seats = runElection(data, sperregrense, firstDivisor);
+
+
+  var svg = d3.select("svg");
+
+  console.log(seats);
+  
+  svg.selectAll("rect")
+  .data(seats)
+  .transition()
+  .duration(500)
+  .attr("fill", function(d) {
+    if(d.Parti in colours) {
+      return colours[d.Parti]; 
+    } else {
+      return "black";
+    }
+  });
+});
+}
+
+
+function distriktsmandat(n, votes, firstDivisor) {
+  // votes object array with keys Stemmer, Parti
+
+  if(typeof(firstDivisor) === 'undefined') firstDivisor = 1.4;
+
+  for(i = 0; i < votes.length; i++ ) {
+    votes[i].Mandater = 0;
+    votes[i].tempVotes = votes[i].Stemmer/firstDivisor;
+  }
+
+  for( i = 0; i < n; i++ ) {
+    // sort descending order
+    votes = votes.sort(function(a, b) { 
+      return d3.descending(a.tempVotes, b.tempVotes); });
+
+    votes[0].Mandater += 1;
+    votes[0].tempVotes = votes[0].Stemmer/(2*votes[0].Mandater + 1);
+  }
+
+  votes = votes.sort(function(a, b) { return d3.descending(a.Mandater, b.Mandater); });
+
+  return(votes);
+
+ }
+
+ function seatarray(data) {
+    // data array of each party in 
+
+    var seats = [];
+
+    for(i = 0; i < data.length; i++) {
+      var parti = data[i].Parti;
+      for(j = 0; j < data[i].Mandater; j++) {
+        var temp = { Parti: parti };
+        seats = seats.concat(temp);
+      }
+    }
+
+    return(seats);
+ }
+
+ function runElection (data, sperregrense, firstDivisor) {
+
+    var fylkeData  = d3.nest()
   .key(function(d) { return d.Fylke; })
   .entries(data);
 
 
   var mandater = [];
 
+  // beregn distriktsmandater for hvert fylke
   for(var key in mandaterPerFylke) {
     var stemmer = fylkeData.filter(function(d) { return d.key == key; });
-    var temp = distriktsmandat(mandaterPerFylke[key] - 1, stemmer[0].values);
+    var temp = distriktsmandat(mandaterPerFylke[key] - 1, stemmer[0].values, firstDivisor);
     mandater = mandater.concat(temp);
     //mandater[key] = distriktsmandat2(mandaterPerFylke[key], stemmer[0].values);
   }
-
 
   var landsData = d3.nest()
   .key(function(d) { return d.Parti; })
@@ -76,14 +279,9 @@ d3.csv("2013.csv", function(data) {
   }
 
   var landsStemmer = landsStemmer.map(function(d) { return d.values; });
-   
-  console.log(landsData);
-  console.log(landsStemmer);
-
-  var M = 169;
 
   for(i = M; i > 0; i--) {
-    var landsMandater = distriktsmandat(i, landsStemmer);
+    var landsMandater = distriktsmandat(i, landsStemmer, firstDivisor);
 
     //console.log(landsMandater);
     for(j = 0; j < landsMandater.length; j++) {
@@ -105,34 +303,11 @@ d3.csv("2013.csv", function(data) {
 
 
   console.log(landsMandater);
+  var seats = seatarray(landsMandater);
 
-});
 
-function distriktsmandat(n, votes, firstDivisor) {
-  // votes object array with keys Stemmer, Parti
-
-  if(typeof(firstDivisor) === 'undefined') firstDivisor = 1.4;
-
-  for(i = 0; i < votes.length; i++ ) {
-    votes[i].Mandater = 0;
-    votes[i].tempVotes = votes[i].Stemmer/firstDivisor;
-  }
-
-  for( i = 0; i < n; i++ ) {
-    // sort descending order
-    votes = votes.sort(function(a, b) { 
-      return d3.descending(a.tempVotes, b.tempVotes); });
-
-    votes[0].Mandater += 1;
-    votes[0].tempVotes = votes[0].Stemmer/(2*votes[0].Mandater + 1);
-  }
-
-  votes = votes.sort(function(a, b) { return d3.descending(a.Mandater, b.Mandater); });
-
-  return(votes);
-
+  return(seats);
  }
-
 
 </script>
 </body>

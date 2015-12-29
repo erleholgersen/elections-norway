@@ -1,0 +1,19 @@
+body {
+	font-family: "Trebuchet MS";
+	font-size: 0.8em;
+}
+
+
+#sidebar {
+	float: left;
+	width: 300px;
+}
+
+#graphic {
+	float:left;
+}
+
+#sperregrense, #delingskoeffisient {
+	width: 200px;
+	margin: 5px;
+}
