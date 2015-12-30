@@ -1,5 +1,5 @@
 body {
-	font-family: "Trebuchet MS";
+	font-family: "Verdana";
 	font-size: 0.8em;
 }
 
@@ -16,4 +16,9 @@ body {
 #sperregrense, #delingskoeffisient {
 	width: 200px;
 	margin: 5px;
+}
+
+rect {
+	rx: 3;
+	ry: 3;
 }

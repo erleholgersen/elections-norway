@@ -15,6 +15,15 @@
 <body>
 
 <div id="sidebar">
+
+<p>
+  <select id="electionyear">
+  <option value="2013" selected="selected">2013</option>
+  <option value="2009">2009</option>
+  <option value="2005">2005</option>
+</select>
+
+
 <p>
 <div id="sperregrense-tekst">Sperregrense: 4.0%</div>
 <div id="sperregrense"></div>
@@ -28,7 +37,7 @@
 </div>
 
 <div id="graphic">
-<svg width="500" height="300">
+<svg width="600" height="400">
 </svg>
 
 </div>
@@ -69,13 +78,26 @@
     });
   });
 
+    $("#electionyear").change(function() {
+      updateGraph();
+    });
+
 var firstDivisor = 1.4;
+var year = 2013;
 
 // 2013 fordeling
-var mandaterPerFylke = {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
+var mandaterPerFylke = { 2013: {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
 "Nord-Trøndelag": 5, "Oslo": 19, "Sogn og Fjordane": 4, "Telemark": 6, "Vest-Agder": 6,
 "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 16, "Nordland": 9, "Oppland": 7,
-"Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7};
+"Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7},
+2009: {"Akershus": 16, "Buskerud": 9, "Hedmark": 8, "Møre og Romsdal": 9,
+"Nord-Trøndelag": 6, "Oslo": 17, "Sogn og Fjordane": 5, "Telemark": 6, "Vest-Agder": 6,
+"Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 15, "Nordland": 10, "Oppland": 7,
+"Rogaland": 13, "Sør-Trøndelag": 10, "Troms": 7, "Vestfold": 7},
+2005: {"Akershus": 16, "Buskerud": 9, "Hedmark": 8, "Møre og Romsdal": 9,
+"Nord-Trøndelag": 6, "Oslo": 17, "Sogn og Fjordane": 5, "Telemark": 6, "Vest-Agder": 6,
+"Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 15, "Nordland": 10, "Oppland": 7,
+"Rogaland": 13, "Sør-Trøndelag": 10, "Troms": 7, "Vestfold": 7}  };
 
 var colours = {
   "A": "#DF1A22",
@@ -89,13 +111,15 @@ var colours = {
   "KRISTNE": "#F6F5D5",
   "RØDT": "#E31C23",
   "PP": "#0D59AC",
-  "PIR": "#262626"
+  "PIR": "#262626",
+  "RV": "#E31C23",
+  "KYST": "#00AC8D"
 }
 
 var M = 169;
 
 width = 500;
-height = 300;
+height = 260;
 
 n_width = 20;
 n_height = Math.ceil(M/n_width);
@@ -160,9 +184,10 @@ function makeGraph() {
 function updateGraph() {
   sperregrense = $("#sperregrense").slider("value");
   firstDivisor = $("#delingskoeffisient").slider("value");
+  year = $("#electionyear").find(":selected").text();
 
 
-  d3.csv("2013.csv", function(data) {
+  d3.csv(year + ".csv", function(data) {
     data.forEach(function(d) {
       d.Stemmer = +d.Stemmer;
     });
@@ -230,7 +255,9 @@ function distriktsmandat(n, votes, firstDivisor) {
     return(seats);
  }
 
- function runElection (data, sperregrense, firstDivisor) {
+ function runElection (data, sperregrense, firstDivisor, year) {
+
+  if(typeof(year) === "undefined") year = $("#electionyear").find(":selected").text();
 
     var fylkeData  = d3.nest()
   .key(function(d) { return d.Fylke; })
@@ -240,11 +267,10 @@ function distriktsmandat(n, votes, firstDivisor) {
   var mandater = [];
 
   // beregn distriktsmandater for hvert fylke
-  for(var key in mandaterPerFylke) {
+  for(var key in mandaterPerFylke[year]) {
     var stemmer = fylkeData.filter(function(d) { return d.key == key; });
-    var temp = distriktsmandat(mandaterPerFylke[key] - 1, stemmer[0].values, firstDivisor);
+    var temp = distriktsmandat(mandaterPerFylke[year][key] - 1, stemmer[0].values, firstDivisor);
     mandater = mandater.concat(temp);
-    //mandater[key] = distriktsmandat2(mandaterPerFylke[key], stemmer[0].values);
   }
 
   var landsData = d3.nest()
