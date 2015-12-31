@@ -17,7 +17,7 @@
 <div id="sidebar">
 
 <p>
-  <select id="electionyear">
+  Velg valg: <select id="electionyear">
   <option value="2013" selected="selected">2013</option>
   <option value="2009">2009</option>
   <option value="2005">2005</option>
@@ -37,8 +37,9 @@
 </div>
 
 <div id="graphic">
-<svg width="600" height="400">
-</svg>
+<svg id="seatgraphic" width="600" height="300"> </svg>
+<br>
+<svg id="seathist" width="600", height="300" /></svg>
 
 </div>
 
@@ -99,20 +100,22 @@ var mandaterPerFylke = { 2013: {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "M�
 "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 15, "Nordland": 10, "Oppland": 7,
 "Rogaland": 13, "Sør-Trøndelag": 10, "Troms": 7, "Vestfold": 7}  };
 
+var partirekke = ["RØDT", "RV", "SV", "A", "SP", "KYST", "PIR", "MDG", "PP", "KRISTNE", "KRF", "V", "H", "FRP"];
+
 var colours = {
   "A": "#DF1A22",
   "H": "#145194",
-  "FRP": "#053C70",
-  "SV": "#E42235",
+  "FRP": "#062F5C",
+  "SV": "#890007",
   "MDG": "#6A9325",
   "KRF": "#FECD0F",
   "V": "#61B564",
   "SP": "#088643",
   "KRISTNE": "#F6F5D5",
-  "RØDT": "#E31C23",
+  "RØDT": "#3B0003",
   "PP": "#0D59AC",
   "PIR": "#262626",
-  "RV": "#E31C23",
+  "RV": "#3B0003",
   "KYST": "#00AC8D"
 }
 
@@ -127,6 +130,10 @@ n_height = Math.ceil(M/n_width);
 var square_width = 20;
 var square_height = 25;
 
+var bar_width = 40;
+
+var bar_height = 200;
+
 var x = d3.scale.linear()
   .domain([0, n_width])
   .range([0, width]);
@@ -134,6 +141,9 @@ var x = d3.scale.linear()
 var y = d3.scale.linear()
   .domain([0, n_height])
   .range([0, height]);
+
+var bary = d3.scale.linear()
+.range([0, bar_height]);
 
 makeGraph();
 
@@ -152,12 +162,13 @@ function makeGraph() {
 
   // make SVG
 
-  var svg = d3.select("svg");
+  var svg = d3.select("#seatgraphic");
 
   var squares = svg.selectAll("rect")
   .data(seats)
   .enter()
   .append("rect")
+  .attr("class", "")
   .attr("width", square_width)
   .attr("height", square_height)
   .attr("x", function(d, i) {
@@ -194,10 +205,10 @@ function updateGraph() {
 
   var seats = runElection(data, sperregrense, firstDivisor);
 
+  makehist(seats);
 
-  var svg = d3.select("svg");
 
-  console.log(seats);
+  var svg = d3.select("#seatgraphic");
   
   svg.selectAll("rect")
   .data(seats)
@@ -211,6 +222,42 @@ function updateGraph() {
     }
   });
 });
+}
+
+function makehist(seats) {
+  var stemmerfordeling = d3.nest()
+  .key(function(d) { return d.Parti; })
+  .rollup(function(leaves) { return leaves.length})
+  .entries(seats);
+
+
+  bary.domain([0, d3.max(stemmerfordeling, function(d) { return d.values; })]);
+
+  var svg = d3.select("#seathist");
+
+  svg.selectAll("rect")
+  .data(stemmerfordeling)
+  .enter()
+  .append("rect")
+  .attr("width", bar_width)
+  .attr("height", function(d) {
+    return bary(d.values);
+  })
+  .attr("x", function(d, i) {
+    return i*(bar_width + 6);
+  })
+  .attr("y", function(d) {
+    return bar_height - bary(d.values);
+  })
+  .attr("fill", function(d) {
+    if(d.key in colours) {
+      return colours[d.key]; 
+    } else {
+      return "black";
+    }
+  });
+
+  console.log(stemmerfordeling);
 }
 
 
@@ -242,7 +289,13 @@ function distriktsmandat(n, votes, firstDivisor) {
  function seatarray(data) {
     // data array of each party in 
 
+    var data = data.sort(function(a, b) {
+      return partirekke.indexOf(a.Parti) - partirekke.indexOf(b.Parti);
+    });
+
+
     var seats = [];
+
 
     for(i = 0; i < data.length; i++) {
       var parti = data[i].Parti;
@@ -273,14 +326,14 @@ function distriktsmandat(n, votes, firstDivisor) {
     mandater = mandater.concat(temp);
   }
 
+
+// nest data
   var landsData = d3.nest()
   .key(function(d) { return d.Parti; })
   .rollup(function(leaves) { return { 
     "Stemmer": d3.sum(leaves, function(d) { return d.Stemmer; }), 
     "Mandater": d3.sum(leaves, function(d) { return d.Mandater; }) }  })
   .entries(mandater);
-
-  console.log(landsData);
 
   var landsStemmer = d3.nest()
   .key(function(d) { return d.Parti; })
@@ -289,9 +342,11 @@ function distriktsmandat(n, votes, firstDivisor) {
   .entries(mandater);
 
 
-
+// finn totalt antall stemmer
   var stemmeSum = d3.sum(landsStemmer, function(d) { return d.values.Stemmer; });
 
+
+// fjern partier under sperregrensen
   for(i = 0; i < landsStemmer.length; i++) {
     key = landsStemmer[i].key;
     landsStemmer[i].values.Parti = key;
@@ -306,10 +361,11 @@ function distriktsmandat(n, votes, firstDivisor) {
 
   var landsStemmer = landsStemmer.map(function(d) { return d.values; });
 
+// utjevningsmandater
   for(i = M; i > 0; i--) {
     var landsMandater = distriktsmandat(i, landsStemmer, firstDivisor);
 
-    //console.log(landsMandater);
+// sjekk at hvert parti får minst antall distriktsmandater
     for(j = 0; j < landsMandater.length; j++) {
       var parti = landsMandater[j].Parti;
       var distriktsmandater = landsData.filter(function(d) { return d.key == parti; });
@@ -317,9 +373,8 @@ function distriktsmandat(n, votes, firstDivisor) {
       landsMandater[j].Mandater = Math.max(distriktsmandater, landsStemmer[j].Mandater);
     }
 
+// sjekk om riktig antall mandater er delt ut.
     var mandatSum = d3.sum(landsMandater, function(d) { return d.Mandater; });
-
-    //console.log(mandatSum);
 
     if(mandatSum == M) {
       break;
@@ -327,13 +382,13 @@ function distriktsmandat(n, votes, firstDivisor) {
 
   }
 
-
-  console.log(landsMandater);
   var seats = seatarray(landsMandater);
 
 
   return(seats);
+ 
  }
+
 
 </script>
 </body>
