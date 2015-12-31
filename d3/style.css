@@ -22,3 +22,7 @@ body {
 	rx: 3;
 	ry: 3;
 }
+
+.bars text {
+	text-anchor: middle;
+}
