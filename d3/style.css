@@ -4,16 +4,17 @@ body {
 }
 
 
-#sidebar {
-	float: left;
-	width: 300px;
+#controls {
+	width: 100%;
+	margin: 0px;
 }
 
 #graphic {
+	width:100%;
 	float:left;
 }
 
-#sperregrense, #delingskoeffisient {
+#sperregrense, #delingskoeffisient, #areal-kf {
 	width: 200px;
 	margin: 5px;
 }
@@ -26,3 +27,37 @@ body {
 .bars text {
 	text-anchor: middle;
 }
+
+#wrap {
+	width: 1000px;
+	margin: 0 auto;
+	height: 100%;
+}
+
+svg {
+	margin: 15px;
+}
+
+#valg {
+	float:left;
+	width: 180px;
+}
+
+#election-param, #fylke-param {
+	float:left;
+	width: 250px;
+}
+
+#seattable {
+	float: left;
+	width: 200px;
+}
+
+#seatgraphic-wrap {
+	width: 700px;
+	float: left;
+}
+
+
+
+

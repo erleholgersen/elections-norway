@@ -167,7 +167,7 @@ function makeGraph() {
   .data(seats)
   .enter()
   .append("rect")
-  .attr("class", "")
+  .attr("class", "seat")
   .attr("width", square_width)
   .attr("height", square_height)
   .attr("x", function(d, i) {
@@ -222,6 +222,85 @@ function updateGraph() {
   });
 });
 }
+
+function makehist(seats) {
+  var stemmerfordeling = d3.nest()
+  .key(function(d) { return d.Parti; })
+  .rollup(function(leaves) { return leaves.length})
+  .entries(seats);
+
+
+  bary.domain([0, d3.max(stemmerfordeling, function(d) { return d.values; })]);
+
+  var svg = d3.select("#seathist");
+
+  var bars = svg.selectAll(".bars")
+    .data(stemmerfordeling);
+
+  bars.exit()
+    .transition()
+      .duration(300)
+    .attr("y", bary(0))
+    .attr("height", height - bary(0))
+    .style('fill-opacity', 1e-6)
+    .remove();
+    
+var enteringbars = bars.enter()
+    .append("g")
+    .attr("class", "bars")
+    .attr("transform", function(d, i) { return "translate(" + i * bar_width + ",0)"; });
+
+
+
+enteringbars.append("rect")
+    .attr("y", function(d) { return height - bary(d.values); })
+    .attr("height", function(d) { return bary(d.values); })
+    .attr("width", bar_width - 1)
+    .attr("fill", function(d) {
+    if(d.key in colours) {
+      return colours[d.key]; 
+    } else {
+      return "black";
+    }
+  });
+
+
+  enteringbars.append("text")
+    .attr("x", bar_width / 2)
+    .attr("y", function(d) { return height + 5; })
+    .attr("dy", ".75em")
+    .text(function(d) { return d.key; });
+
+
+var updatingbars = svg.selectAll("rect").data(stemmerfordeling);
+
+
+updatingbars
+    .transition()
+    .duration(500)
+    .attr("y", function(d) { return height - bary(d.values); })
+    .attr("height", function(d) { return bary(d.values); })
+    .attr("fill", function(d) {
+    if(d.key in colours) {
+      return colours[d.key]; 
+    } else {
+      return "black";
+    }
+  });
+
+
+var updatingtext = svg.selectAll("text").data(stemmerfordeling);
+
+updatingtext
+    .transition()
+    .duration(500)
+    .text(function(d) { return d.key; });
+
+
+
+  console.log(stemmerfordeling);
+}
+
 
 
 function distriktsmandat(n, votes, firstDivisor) {
