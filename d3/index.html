@@ -51,6 +51,7 @@
 <div id="fylke-param">
 <div id="areal-kf-tekst">Arealkoeffisient: 1.8</div>
 <div id="areal-kf"></div>
+
 </div>
 
 </div>
@@ -217,8 +218,6 @@ d3.csv("fylkesdata.csv", function(fylkesdata) {
 
   mandaterPerFylke = calculateMandater(fylkesdata, akoeff, year);
 
-  console.log(mandaterPerFylke);
-
   var seats = runElection(data, mandaterPerFylke, sperregrense, firstDivisor);
 
   console.log(seats);
@@ -341,7 +340,7 @@ function distriktsmandat(n, votes, firstDivisor) {
 
   votes = votes.sort(function(a, b) { return d3.descending(a.Mandater, b.Mandater); });
 
-  return(votes);
+  return votes;
 
  }
 
@@ -371,7 +370,7 @@ function distriktsmandat(n, votes, firstDivisor) {
       }
     }
 
-    return(seats);
+    return seats;
  }
 
  function runElection (data, mandaterPerFylke, sperregrense, firstDivisor) {
@@ -452,8 +451,10 @@ function distriktsmandat(n, votes, firstDivisor) {
 
   var seats = seatarray(landsMandater);
 
+  makeTable(landsMandater);
 
-  return(seats);
+
+  return seats;
  
  }
 
@@ -475,8 +476,30 @@ function distriktsmandat(n, votes, firstDivisor) {
     });
 
 
-  return(fylkesfordeling);
+  return fylkesfordeling;
 
+ }
+
+ function makeTable(data) {
+// data json with mandat count
+
+  data = data.filter(function(d) { return d.Mandater > 0; }).sort(function(a, b) { 
+      return d3.descending(a.Mandater, b.Mandater); 
+    });
+
+  var header = "<tr> <th>Parti</th> <th>Mandater</th> </tr>";
+
+  var html = "<table>" + header;
+
+
+  for(i = 0; i < data.length; i++) {
+    row = "<tr><td>" + data[i].Parti + "</td><td>" + data[i].Mandater + "</td></tr>";
+    html += row;
+  }
+
+  html += "</table>";
+
+  $("#seattable").html(html);
 
  }
 

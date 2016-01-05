@@ -29,7 +29,7 @@ body {
 }
 
 #wrap {
-	width: 1000px;
+	width: 900px;
 	margin: 0 auto;
 	height: 100%;
 }
@@ -51,6 +51,7 @@ svg {
 #seattable {
 	float: left;
 	width: 200px;
+	margin-top: 30px;
 }
 
 #seatgraphic-wrap {
@@ -59,5 +60,19 @@ svg {
 }
 
 
+#controls {
+	width: 700px;
+	height: 200px;
+	margin-left: auto;
+	margin-right: auto;
+}
 
+#graphic {
+	width: 100%;
+}
+
+#seattable table {
+	font-size: 1em;
+	text-align: right;
+}
 
