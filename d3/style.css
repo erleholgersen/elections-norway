@@ -76,3 +76,21 @@ svg {
 	text-align: right;
 }
 
+
+th, td {
+	width: 70px;
+}
+
+#seattable th {
+	border-bottom: 1px solid black;
+}
+
+#controls h3 {
+	text-transform: uppercase;
+	font-size: 1em;
+}
+
+
+
+
+
