@@ -39,13 +39,13 @@ svg {
 }
 
 #valg {
-	float:left;
-	width: 180px;
+	float: left;
+	width: 300px;
 }
 
 #election-param, #fylke-param {
-	float:left;
-	width: 250px;
+	float: left;
+	width: 300px;
 }
 
 #seattable {
@@ -61,7 +61,7 @@ svg {
 
 
 #controls {
-	width: 700px;
+	width: 900px;
 	height: 200px;
 	margin-left: auto;
 	margin-right: auto;
@@ -90,7 +90,20 @@ th, td {
 	font-size: 1em;
 }
 
+.year {
+	cursor: pointer;
+}
 
+.year:hover {
+   text-decoration: underline;
+}
 
+.year-selected {
+   font-weight: bolder;
+   cursor: default;
+   text-decoration: underline;
+}
 
-
+#yearlist {
+	line-height: 1.6em;
+}

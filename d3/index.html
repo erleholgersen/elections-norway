@@ -32,11 +32,12 @@
 
 <div id="valg">
 <h3>Valg</h3>
-<select id="electionyear">
-  <option value="2013" selected="selected">2013</option>
-  <option value="2009">2009</option>
-  <option value="2005">2005</option>
-</select>
+
+<div id="yearlist">
+  <span class="year-selected" name="year" id="2013">2013</span> <br>
+  <span class="year" name="year" id="2009">2009</span> <br>
+  <span class="year" name="year" id="2005">2005</span> <br>
+</div>
 </div>
 
 <div id="election-param">
@@ -63,6 +64,17 @@
 
 
 <script charset="UTF-8">
+
+
+$("span[name=year]").click(function() {
+  // change class of old element
+
+  $("#" + year).attr("class", "year");
+  $(this).attr("class", "year-selected");
+
+  year = $(this).attr("id");
+  updateGraph();
+});
 
 // initialize sliders
 
@@ -219,7 +231,7 @@ d3.csv("fylkesdata.csv", function(fylkesdata) {
   });
 
 
-  mandaterPerFylke = calculateMandater(fylkesdata, akoeff, year);
+  mandaterPerFylke = calculateMandater(fylkesdata, akoeff);
 
   var seats = runElection(data, mandaterPerFylke, sperregrense, firstDivisor);
 
@@ -270,8 +282,6 @@ d3.csv("fylkesdata.csv", function(fylkesdata) {
 function updateGraph() {
   sperregrense = $("#sperregrense").slider("value");
   firstDivisor = $("#delingskoeffisient").slider("value");
-  year = $("#electionyear").find(":selected").text();
-
   akoeff = $("#areal-kf").slider("value");
 
 
@@ -461,8 +471,7 @@ function distriktsmandat(n, votes, firstDivisor) {
  
  }
 
- function calculateMandater(data, akoeff, year) {
-  if(typeof(year) === "undefined") year = $("#electionyear").find(":selected").text();
+ function calculateMandater(data, akoeff) {
 
   if(year == 2013) {
     colname = "ft2012";
