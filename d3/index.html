@@ -130,20 +130,6 @@ $("span[name=year]").click(function() {
 var firstDivisor = 1.4;
 var year = 2013;
 
-// 2013 fordeling
-// var mandaterPerFylke = { 2013: {"Akershus": 17, "Buskerud": 9, "Hedmark": 7, "Møre og Romsdal": 9,
-// "Nord-Trøndelag": 5, "Oslo": 19, "Sogn og Fjordane": 4, "Telemark": 6, "Vest-Agder": 6,
-// "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 16, "Nordland": 9, "Oppland": 7,
-// "Rogaland": 14, "Sør-Trøndelag": 10, "Troms": 6, "Vestfold": 7},
-// 2009: {"Akershus": 16, "Buskerud": 9, "Hedmark": 8, "Møre og Romsdal": 9,
-// "Nord-Trøndelag": 6, "Oslo": 17, "Sogn og Fjordane": 5, "Telemark": 6, "Vest-Agder": 6,
-// "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 15, "Nordland": 10, "Oppland": 7,
-// "Rogaland": 13, "Sør-Trøndelag": 10, "Troms": 7, "Vestfold": 7},
-// 2005: {"Akershus": 16, "Buskerud": 9, "Hedmark": 8, "Møre og Romsdal": 9,
-// "Nord-Trøndelag": 6, "Oslo": 17, "Sogn og Fjordane": 5, "Telemark": 6, "Vest-Agder": 6,
-// "Østfold": 9, "Aust-Agder": 4, "Finnmark": 5, "Hordaland": 15, "Nordland": 10, "Oppland": 7,
-// "Rogaland": 13, "Sør-Trøndelag": 10, "Troms": 7, "Vestfold": 7}  };
-
 var partirekke = ["RØDT", "RV", "SV", "A", "SP", "KYST", "PIR", "MDG", "PP", "KRISTNE", "KRF", "V", "H", "FRP"];
 
 var colours = {
@@ -244,7 +230,7 @@ d3.csv("fylkesdata.csv", function(fylkesdata) {
   var squares = svg.selectAll("rect")
   .data(seats)
   .enter()
-  .append("rect")
+  .append("svg:rect")
   .attr("class", "seat")
   .attr("width", square_width)
   .attr("height", square_height)
@@ -268,9 +254,8 @@ d3.csv("fylkesdata.csv", function(fylkesdata) {
 
     return "rotate(" + angle + " " + x_coord + " " + 660 + ")";
   })
-  .on("click", function(d) {
-    console.log(d.Parti);
-  });
+  .append("svg:title")
+  .text(function(d) { return d.Parti; });
 
 });
 
@@ -315,8 +300,9 @@ function updateGraph() {
 
   var svg = d3.select("#seatgraphic");
   
-  svg.selectAll("rect")
-  .data(seats)
+  var path = svg.selectAll("rect").data(seats);
+
+  path
   .transition()
   .duration(500)
   .attr("fill", function(d) {
@@ -326,6 +312,12 @@ function updateGraph() {
       return "black";
     }
   });
+
+  path.select("title")
+  .text(function(d) { return d.Parti; });
+
+
+
 });
 
 });
