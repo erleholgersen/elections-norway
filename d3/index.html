@@ -18,14 +18,13 @@
 
 
 <div id="graphic">
-<div id="seattable">Placeholder</div>
+        
+<svg id="seathist" width="300", height="300" /></svg>
 
 <div id="seatgraphic-wrap">
-<svg id="seatgraphic" width="650" height="400"> </svg>
-
+<svg id="seatgraphic" width="500" height="350"></svg>
 </div>
 </div>
-
 
 
 <div id="controls">
@@ -67,13 +66,14 @@
 
 
 $("span[name=year]").click(function() {
-  // change class of old element
+    // change class of old element
 
-  $("#" + year).attr("class", "year");
-  $(this).attr("class", "year-selected");
+    $("#" + year).attr("class", "year");
+    $(this).attr("class", "year-selected");
 
-  year = $(this).attr("id");
-  updateGraph();
+    year = $(this).attr("id");
+    updateGraph();
+    makeHist();
 });
 
 // initialize sliders
@@ -89,6 +89,7 @@ $("span[name=year]").click(function() {
       },
       change: function() {
         updateGraph();
+        makeHist();
       }
     });
   });
@@ -104,6 +105,7 @@ $("span[name=year]").click(function() {
       },
       change: function() {
         updateGraph();
+        makeHist();
       }
     });
   });
@@ -119,6 +121,7 @@ $("span[name=year]").click(function() {
       },
       change: function() {
         updateGraph();
+        makeHist();
       }
     });
   });
@@ -151,23 +154,23 @@ var colours = {
 
 var M = 169;
 
-var width = 500;
-var height = 260;
+var width = 300;
+var height = 200;
 
 var n_width = 20;
 var n_height = Math.ceil(M/n_width);
 
-var margin_left = 100;
+var margin_left = 130;
 
-var square_width = 18;
-var square_height = 23;
+var square_width = 15;
+var square_height = 19;
 
-var bar_width = 40;
+var bar_width = 20;
 
 var bar_height = 200;
 
-var seat_r = 6;
-var max_angle = Math.PI/6;
+var seat_r = 4;
+var max_angle = Math.PI/8;
 
 
 var theta = d3.scale.linear()
@@ -186,8 +189,7 @@ var bary = d3.scale.linear()
 .range([0, bar_height]);
 
 makeGraph();
-
-
+    
 function makeGraph() {
 
   var sperregrense = 4.0;
@@ -323,7 +325,118 @@ function updateGraph() {
 });
 }
 
+function makeHist() {
+    sperregrense = $("#sperregrense").slider("value");
+    firstDivisor = $("#delingskoeffisient").slider("value");
+    akoeff = $("#areal-kf").slider("value");
 
+    console.log('Make Hist Called');
+
+    d3.csv("fylkesdata.csv", function(fylkesdata) {
+
+    fylkesdata.forEach(function(d) {
+
+        d.areal = +d.areal;
+        d.ft2004 = +d.ft2004;
+        d.ft2012 = +d.ft2012;
+
+        if(year == 2013) {
+            d.Stemmer = d.ft2012 + akoeff*d.areal;
+        } else {
+            d.Stemmer = d.ft2004 + akoeff*d.areal;
+        }
+
+    });
+
+
+      d3.csv(year + ".csv", function(data) {
+        data.forEach(function(d) {
+          d.Stemmer = +d.Stemmer;
+        });
+
+      mandaterPerFylke = calculateMandater(fylkesdata, akoeff, year);
+
+      var seats = runElection(data, mandaterPerFylke, sperregrense, firstDivisor);
+
+
+      var stemmerfordeling = d3.nest()
+        .key(function(d) { return d.Parti; })
+        .rollup(function(leaves) { return leaves.length})
+        .entries(seats);
+
+
+      bary.domain([0, d3.max(stemmerfordeling, function(d) { return d.values; })]);
+
+      var svg = d3.select("#seathist");
+
+      var bars = svg.selectAll(".bars")
+        .data(stemmerfordeling);
+
+      bars.exit()
+        .transition()
+          .duration(300)
+        .attr("y", bary(0))
+        .attr("height", height - bary(0))
+        .style('fill-opacity', 1e-6)
+        .remove();
+
+    var enteringbars = bars.enter()
+        .append("g")
+        .attr("class", "bars")
+        .attr("transform", function(d, i) { return "translate(" + i * bar_width + ",0)"; });
+
+    enteringbars.append("rect")
+        .attr("y", function(d) { return height - bary(d.values); })
+        .attr("height", function(d) { return bary(d.values); })
+        .attr("width", bar_width - 1)
+        .attr("fill", function(d) {
+        if(d.key in colours) {
+          return colours[d.key]; 
+        } else {
+          return "black";
+        }
+      });
+
+      enteringbars.append("text")
+        .attr("x", bar_width / 2)
+        .attr("y", function(d) { return height + 5; })
+        .attr("dy", ".75em")
+        .text(function(d) { return d.key; });
+
+
+    var updatingbars = svg.selectAll("rect").data(stemmerfordeling);
+
+
+    updatingbars
+        .transition()
+        .duration(500)
+        .attr("y", function(d) { return height - bary(d.values); })
+        .attr("height", function(d) { return bary(d.values); })
+        .attr("fill", function(d) {
+        if(d.key in colours) {
+          return colours[d.key]; 
+        } else {
+          return "black";
+        }
+      });
+
+
+    var updatingtext = svg.selectAll("text").data(stemmerfordeling);
+
+    updatingtext
+        .transition()
+        .duration(500)
+        .text(function(d) { return d.key; });
+
+
+
+  console.log(stemmerfordeling);
+          
+      });
+        
+    });
+}
+    
 function distriktsmandat(n, votes, firstDivisor) {
   // votes object array with keys Stemmer, Parti
 
@@ -456,8 +569,6 @@ function distriktsmandat(n, votes, firstDivisor) {
 
   var seats = seatarray(landsMandater);
 
-  makeTable(landsMandater);
-
 
   return seats;
  
@@ -484,30 +595,31 @@ function distriktsmandat(n, votes, firstDivisor) {
 
  }
 
- function makeTable(data) {
-// data json with mandat count
+// function makeTable(data) {
+//// data json with mandat count
+//
+//  data = data.filter(function(d) { return d.Mandater > 0; }).sort(function(a, b) { 
+//      return d3.descending(a.Mandater, b.Mandater); 
+//    });
+//
+//  var header = "<tr> <th>Parti</th> <th>Mandater</th> </tr>";
+//
+//  var html = "<table>" + header;
+//
+//
+//  for(i = 0; i < data.length; i++) {
+//    row = "<tr><td>" + data[i].Parti + "</td><td>" + data[i].Mandater + "</td></tr>";
+//    html += row;
+//  }
+//
+//  html += "</table>";
+//
+//  $("#seattable").html(html);
+//
+// }
 
-  data = data.filter(function(d) { return d.Mandater > 0; }).sort(function(a, b) { 
-      return d3.descending(a.Mandater, b.Mandater); 
-    });
 
-  var header = "<tr> <th>Parti</th> <th>Mandater</th> </tr>";
-
-  var html = "<table>" + header;
-
-
-  for(i = 0; i < data.length; i++) {
-    row = "<tr><td>" + data[i].Parti + "</td><td>" + data[i].Mandater + "</td></tr>";
-    html += row;
-  }
-
-  html += "</table>";
-
-  $("#seattable").html(html);
-
- }
-
-
+    
 </script>
 </body>
 </html>
